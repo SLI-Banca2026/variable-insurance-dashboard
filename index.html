@@ -1,0 +1,500 @@
+<title>삼성생명 변액보험 펀드 수익률 대시보드</title>
+<style>
+  :root {
+    --bg: #F6F4EE;
+    --surface: #FFFFFF;
+    --surface-soft: #FBFAF6;
+    --ink: #1C2333;
+    --ink-soft: #5B6478;
+    --ink-faint: #8B93A6;
+    --accent: #A8752E;
+    --accent-ink: #7A5620;
+    --accent-soft: #F1E4CC;
+    --rise: #C23B3B;
+    --fall: #2C5FA8;
+    --line: #E4DFD3;
+    --line-strong: #D6CFBD;
+    --chip-bg: #FFFFFF;
+    --shadow: 0 1px 2px rgba(28,35,51,.04), 0 8px 24px rgba(28,35,51,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171F;
+      --surface: #1B2030;
+      --surface-soft: #1F2536;
+      --ink: #EDEFF5;
+      --ink-soft: #9AA3B8;
+      --ink-faint: #6B7488;
+      --accent: #D6A34F;
+      --accent-ink: #F0C879;
+      --accent-soft: #3A2E18;
+      --rise: #E2635F;
+      --fall: #6FA0E0;
+      --line: #2A3040;
+      --line-strong: #363D52;
+      --chip-bg: #1F2536;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171F; --surface: #1B2030; --surface-soft: #1F2536; --ink: #EDEFF5;
+    --ink-soft: #9AA3B8; --ink-faint: #6B7488; --accent: #D6A34F; --accent-ink: #F0C879;
+    --accent-soft: #3A2E18; --rise: #E2635F; --fall: #6FA0E0; --line: #2A3040;
+    --line-strong: #363D52; --chip-bg: #1F2536;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #F6F4EE; --surface: #FFFFFF; --surface-soft: #FBFAF6; --ink: #1C2333;
+    --ink-soft: #5B6478; --ink-faint: #8B93A6; --accent: #A8752E; --accent-ink: #7A5620;
+    --accent-soft: #F1E4CC; --rise: #C23B3B; --fall: #2C5FA8; --line: #E4DFD3;
+    --line-strong: #D6CFBD; --chip-bg: #FFFFFF;
+    --shadow: 0 1px 2px rgba(28,35,51,.04), 0 8px 24px rgba(28,35,51,.05);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+    font-feature-settings: "tnum" 1;
+    line-height: 1.5;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ---- top bar ---- */
+  .topbar {
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .topbar-inner {
+    max-width: 1180px; margin: 0 auto; padding: 22px 24px 18px;
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px;
+  }
+  .brand-eyebrow {
+    font-size: 12px; font-weight: 600; letter-spacing: .09em; color: var(--accent-ink);
+    text-transform: uppercase; margin: 0 0 6px;
+  }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  .std-date-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .std-date-label { font-size: 13px; color: var(--ink-soft); }
+  .std-date-input {
+    font: inherit; font-weight: 700; font-size: 14px; color: var(--ink);
+    background: var(--accent-soft); border: 1px solid var(--line-strong); border-radius: 7px;
+    padding: 5px 10px; width: 132px;
+  }
+  .refresh-note { font-size: 12px; color: var(--ink-faint); max-width: 420px; }
+  .auto-status-line { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--rise); background: var(--accent-soft); padding: 6px 10px; border-radius: 6px; max-width: 640px; }
+  .auto-status-line:empty { display: none; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+  button { font: inherit; cursor: pointer; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 13.5px;
+    border: 1px solid transparent; transition: transform .08s ease, background .15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: #1C1200; }
+  .btn-primary:hover { background: var(--accent-ink); color: #fff; }
+  .btn-ghost { background: transparent; border-color: var(--line-strong); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- section headings ---- */
+  section { margin-top: 40px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .section-title { font-size: 17px; font-weight: 800; margin: 0; }
+  .section-sub { font-size: 12.5px; color: var(--ink-faint); }
+
+  /* ---- TOP5 cards ---- */
+  .top5-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .top5-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .top5-grid { grid-template-columns: 1fr; } }
+  .top5-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 16px 8px; box-shadow: var(--shadow);
+  }
+  .top5-card h3 { font-size: 13.5px; font-weight: 800; margin: 0 0 12px; display: flex; align-items: center; justify-content: space-between; }
+  .top5-card h3 .period-badge {
+    background: var(--accent-soft); color: var(--accent-ink); font-size: 11px; font-weight: 700;
+    padding: 3px 8px; border-radius: 999px;
+  }
+  .top5-list { list-style: none; margin: 0; padding: 0; }
+  .top5-list li {
+    display: flex; align-items: center; gap: 9px; padding: 7px 0;
+    border-top: 1px solid var(--line);
+  }
+  .top5-list li:first-child { border-top: none; }
+  .rank-badge {
+    width: 20px; height: 20px; border-radius: 6px; background: var(--surface-soft);
+    color: var(--ink-soft); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    flex: none; border: 1px solid var(--line);
+  }
+  .top5-list li:nth-child(1) .rank-badge { background: var(--accent); color: #1C1200; border-color: var(--accent); }
+  .top5-name { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top5-cat { font-size: 10.5px; color: var(--ink-faint); display: block; }
+  .top5-val { font-size: 13px; font-weight: 800; flex: none; }
+
+  /* ---- filter row ---- */
+  .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .chip {
+    background: var(--chip-bg); border: 1px solid var(--line-strong); color: var(--ink-soft);
+    border-radius: 999px; padding: 7px 13px; font-size: 12.5px; font-weight: 600;
+  }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #1C1200; }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .search-box {
+    margin-left: auto; display: flex; align-items: center; gap: 7px;
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: 999px;
+    padding: 7px 13px; min-width: 200px;
+  }
+  .search-box input {
+    border: none; background: transparent; font: inherit; font-size: 13px; color: var(--ink);
+    outline: none; width: 100%;
+  }
+  .search-box svg { flex: none; opacity: .55; }
+
+  /* ---- table ---- */
+  .table-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 1420px; }
+  thead th {
+    position: sticky; top: 0; background-color: #1C2333; color: #F4F1E8;
+    font-size: 11.5px; font-weight: 700; text-align: right; padding: 11px 10px;
+    white-space: nowrap; cursor: pointer; user-select: none; border-right: 1px solid rgba(255,255,255,.08);
+  }
+  thead th:nth-child(1), thead th:nth-child(2), thead th:nth-child(6) { text-align: left; }
+  thead th:last-child { border-right: none; text-align: center; }
+  thead th .sort-arrow { opacity: .45; margin-left: 3px; font-size: 9px; }
+  thead th.sorted .sort-arrow { opacity: 1; color: var(--accent-soft); }
+  thead th:hover { background: #2A3348; }
+  tbody td {
+    padding: 9px 10px; font-size: 12.5px; text-align: right; border-top: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody td:nth-child(1), tbody td:nth-child(2) { text-align: left; }
+  tbody td:last-child { text-align: center; }
+  tbody tr:nth-child(even) td { background: var(--surface-soft); }
+  tbody tr:hover td { background: var(--accent-soft); }
+  .fund-name { font-weight: 700; }
+  .cat-pill {
+    display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent-ink); white-space: nowrap;
+  }
+  .b2601-flag { color: var(--accent); font-weight: 800; }
+  .desc-cell { text-align: left; white-space: pre-line; max-width: 360px; min-width: 260px; font-size: 11.5px; line-height: 1.55; color: var(--ink-soft); }
+  .desc-cell.na { color: var(--ink-faint); white-space: normal; }
+  .rise { color: var(--rise); font-weight: 700; }
+  .fall { color: var(--fall); font-weight: 700; }
+  .flat { color: var(--ink-faint); }
+  .na { color: var(--ink-faint); }
+  .row-count { font-size: 12px; color: var(--ink-faint); margin-top: 10px; }
+
+  /* ---- footer ---- */
+  footer {
+    margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--ink-faint); display: flex; flex-direction: column; gap: 6px;
+  }
+  footer strong { color: var(--ink-soft); }
+</style>
+
+<h2 class="sr-only">삼성생명 변액보험 펀드 37개의 기간별 수익률(1일·1주·1개월·3개월·6개월·1년·3년·5년·누적)을 카테고리별로 조회하고, 기간별 TOP5를 제공하는 대시보드</h2>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <p class="brand-eyebrow">Samsung Life · Variable Insurance Funds</p>
+      <h1>삼성생명 변액보험 펀드 수익률 대시보드</h1>
+      <div class="std-date-row">
+        <span class="std-date-label">기준일자</span>
+        <input class="std-date-input tabular" id="stdDateInput" type="text" value="2026-08-19" aria-label="기준일자">
+        <span class="refresh-note">이 화면은 위 날짜 기준 스냅샷입니다. 매 영업일 자동으로 최신 데이터로 갱신됩니다.</span>
+      </div>
+      <div id="autoStatusLine" class="auto-status-line"></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="resetBtn" type="button">필터 초기화</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="top5Section">
+    <div class="section-head">
+      <h2 class="section-title">기간별 수익률 TOP 5</h2>
+      <span class="section-sub">37개 펀드 기준 · 단위 %</span>
+    </div>
+    <div class="top5-grid" id="top5Grid"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2 class="section-title">전체 펀드 현황</h2>
+      <span class="section-sub" id="rowCountTop"></span>
+    </div>
+
+    <div class="filter-row" id="chipRow">
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="펀드명 검색">
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+        <table id="fundTable">
+          <thead>
+            <tr id="headRow"></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="row-count" id="rowCountBottom"></p>
+  </section>
+
+  <footer>
+    <div><strong>출처</strong> — 생명보험협회 공시실(pub.insure.or.kr) &gt; 상품비교공시 &gt; 변액보험 &gt; 펀드공시, 삼성생명(L03) 기준</div>
+    <div><strong>분류 안내</strong> — '카테고리'는 공시상 대유형/소유형 및 펀드명을 근거로 1차 자동 분류한 값이며, 추후 조정될 수 있습니다.</div>
+    <div><strong>탄탄한 변액연금(B2601)</strong> 표시는 [삼성 탄탄한 변액연금보험(B2601)] 상품에서 운용 가능한 펀드를 의미하며, 목록 최상단에 고정 정렬됩니다.</div>
+    <div>생성 시각: 2026-08-19 기준 스냅샷 · 매 영업일 자동 갱신됩니다.</div>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- data -----------------------------------------------------------
+  // period returns and base returns are stored as % values (e.g. 5.89 = 5.89%)
+  var FUNDS = [
+    {code:"KLVL0326040",name:"MMF형",est:"2006-01-05",fee:0.1635,nav:3501.07,cat:"국내채권",daetype:"국내투자",sotype:"채권형",b2601:true, d1:0.03,w1:0.06,m1:0.31,m3:0.69,m6:1.34,y1:2.48,y3:9.89,y5:15.16,cum:62.39,desc:"▶ 1년 미만의 국내 단기채권에 투자(주로 MMF 등에 투자)"},
+    {code:"KLVL0326390",name:"One펀드-국내포커스주식형",est:"2015-07-20",fee:0.6571,nav:68.00,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.99,w1:6.65,m1:0.49,m3:-0.44,m6:23.83,y1:105.61,y3:175.05,y5:136.21,cum:276.69,desc:""},
+    {code:"KLVL0326380",name:"One펀드-글로벌포커스주식형",est:"2015-07-20",fee:0.7461,nav:83.95,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.47,w1:3.20,m1:1.29,m3:2.42,m6:15.97,y1:55.36,y3:108.17,y5:84.91,cum:178.35,desc:"▶ 전 세계 주식에 투자하되 국내는 30%, 해외는 70% 가량 투자"},
+    {code:"KLVL0326430",name:"S Selection주식형",est:"2016-02-04",fee:0.5435,nav:24.14,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:false, d1:0.25,w1:10.01,m1:-2.89,m3:-6.95,m6:17.01,y1:87.22,y3:140.38,y5:117.76,cum:217.89,desc:""},
+    {code:"KLVL0326460",name:"S자산배분형30",est:"2018-05-02",fee:0.4720,nav:2078.94,cat:"자산배분",daetype:"국내외투자",sotype:"채권혼합형",b2601:false, d1:-0.32,w1:0.56,m1:0.18,m3:0.23,m6:1.33,y1:2.96,y3:23.95,y5:16.46,cum:29.25,desc:""},
+    {code:"KLVL0326450",name:"S자산배분형50",est:"2018-05-02",fee:0.5595,nav:3696.86,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:true, d1:-0.30,w1:1.26,m1:0.46,m3:0.72,m6:4.85,y1:10.15,y3:38.47,y5:28.24,cum:47.43,desc:"▶ 국내 채권에 최소 50%가 투자되고 나머지는 국내외 주식에 투자\n▶ 글로벌 분산투자의 기조하에, 시장 상황 및 전망에 따라 일부 투자 대상과 비중을 조절하는 자산배분형 펀드로 분기마다 조정을 원칙으로 하나 시장상황 급변시에는 수시로 변경 가능\n▶ 해외 투자자산에 대해서는 환헤지를 원칙으로 하여 환율의 변동에 따른 추가적인 이익이나 손실은 발생하지 않음"},
+    {code:"KLVL0326440",name:"S자산배분형70",est:"2016-05-04",fee:0.6426,nav:398.09,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:false, d1:-0.41,w1:1.95,m1:0.03,m3:0.68,m6:8.69,y1:17.75,y3:53.73,y5:39.44,cum:78.64,desc:""},
+    {code:"KLVL0326260",name:"그로스주식형",est:"2009-10-20",fee:0.9289,nav:772.01,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:-1.86,w1:8.55,m1:-0.39,m3:-6.94,m6:22.89,y1:120.95,y3:175.73,y5:122.00,cum:308.97,desc:"▶ 국내 코스피 및 코스닥 주식 종목에 직접 투자하거나 ETF등에 투자"},
+    {code:"KLVL0326530",name:"글로벌대체투자",est:"2018-05-02",fee:0.5421,nav:5.64,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.16,w1:0.28,m1:-2.44,m3:-2.49,m6:-3.23,y1:5.76,y3:33.27,y5:18.26,cum:44.83,desc:"▶ 산업의 기반이 되는 인프라, 리츠, 원자재, 에너지 등 대체투자 관련 글로벌 기업에 투자하는 DWS 자산운용의 글로벌인프라펀드를 중심으로 투자"},
+    {code:"KLVL0326490",name:"글로벌마켓주식형",est:"2018-05-02",fee:0.5466,nav:6.56,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.06,w1:0.59,m1:1.57,m3:3.51,m6:5.37,y1:5.56,y3:38.23,y5:26.05,cum:87.04,desc:"▶ 해외 선진국 및 일부 신흥국 종목 중 장기간에 걸친 자본 성장 달성을 목표로 하는 피델리티 운용사의 글로벌포커스 펀드를 중심으로 투자"},
+    {code:"KLVL0326360",name:"글로벌선진국채권형",est:"2013-08-20",fee:0.2085,nav:16.37,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:-0.52,w1:-0.20,m1:-0.80,m3:0.31,m6:-1.81,y1:0.82,y3:5.95,y5:-7.97,cum:-1.69,desc:""},
+    {code:"KLVL0327300",name:"글로벌성장주식형",est:"2020-05-04",fee:0.5477,nav:1120.14,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.18,w1:0.78,m1:1.97,m3:4.41,m6:8.45,y1:16.55,y3:64.36,y5:38.90,cum:100.11,desc:"▶ 글로벌 성장 혁신 기업에 주로 투자하는 펀드들을 중심으로 투자"},
+    {code:"KLVL0326480",name:"글로벌아시아주식형",est:"2018-05-02",fee:0.5453,nav:3.90,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:0.99,w1:3.01,m1:1.70,m3:4.26,m6:10.52,y1:33.28,y3:62.23,y5:28.98,cum:58.94,desc:"▶ 아시아 신흥 국가의 우량 주식 종목에 투자하는 슈로더 이머징 아시아펀드를 중심으로 투자"},
+    {code:"KLVL0326630",name:"글로벌액티브ESG주식형",est:"2022-02-03",fee:0.5456,nav:15.48,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.50,w1:-0.22,m1:3.07,m3:6.07,m6:10.01,y1:16.31,y3:48.77,y5:null,cum:40.16,desc:"▶ 최근 중요성이 대두되고 있는 ESG(친환경/사회적 책임/지배구조 개선) 관점에 부합하면서도 지속적으로 성장할 수 있는 글로벌 기업에 투자"},
+    {code:"KLVL0326620",name:"글로벌액티브S자산배분형30",est:"2022-02-03",fee:0.4973,nav:36.84,cat:"자산배분",daetype:"국내외투자",sotype:"채권혼합형",b2601:false, d1:-0.33,w1:1.00,m1:-1.29,m3:-2.11,m6:1.44,y1:6.64,y3:28.59,y5:null,cum:21.33,desc:"▶ 국내 및 해외채권에 최소 70%가 투자되고 나머지는 국내외 주식에 투자"},
+    {code:"KLVL0326610",name:"글로벌액티브S자산배분형50",est:"2022-02-03",fee:0.5756,nav:52.74,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:false, d1:-0.28,w1:1.63,m1:-1.56,m3:-2.46,m6:4.50,y1:13.67,y3:45.05,y5:null,cum:39.89,desc:"▶ 국내 및 해외채권에 최소 50%가 투자되고 나머지는 국내외 주식에 투자"},
+    {code:"KLVL0326600",name:"글로벌액티브S자산배분형70",est:"2022-02-03",fee:0.6417,nav:64.44,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:false, d1:-0.25,w1:2.32,m1:-1.71,m3:-2.55,m6:8.17,y1:21.70,y3:63.24,y5:null,cum:59.83,desc:"▶ 국내 및 해외채권에 최소 30%가 투자되고 나머지는 국내외 주식에 투자"},
+    {code:"KLVL0326350",name:"글로벌자산배분채권형",est:"2013-08-20",fee:0.2254,nav:11.34,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:-0.40,w1:-0.13,m1:-0.56,m3:0.42,m6:-1.20,y1:0.99,y3:8.16,y5:-5.13,cum:16.26,desc:""},
+    {code:"KLVL0326500",name:"글로벌테마주식형",est:"2018-05-02",fee:0.5470,nav:5.46,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:0.05,w1:1.13,m1:1.54,m3:4.30,m6:10.62,y1:20.62,y3:47.18,y5:21.36,cum:78.02,desc:"▶ 글로벌 유망 섹터인 인구구조의 변화에 따른 관련 종목에 투자하는 피델리티 글로벌 데모그래픽스 펀드를 중심으로 투자"},
+    {code:"KLVL0326520",name:"글로벌테크놀로지",est:"2018-05-02",fee:0.5469,nav:108.53,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.22,w1:1.97,m1:1.92,m3:9.12,m6:26.70,y1:31.51,y3:103.88,y5:58.46,cum:247.89,desc:"▶ 글로벌 기술주 중 성장성과 수익성을 가진 기업에 주로 투자하는 프랭클린템플턴 테크놀로지 펀드에 투자"},
+    {code:"KLVL0326510",name:"글로벌하이일드채권형",est:"2018-05-02",fee:0.2085,nav:89.81,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:-0.16,w1:0.15,m1:0.06,m3:1.19,m6:0.48,y1:2.83,y3:18.50,y5:9.79,cum:21.32,desc:"▶ 선진국 및 이머징국가의 고수익채권(하이일드채권)등에 주로 투자하는 알리안츠 번스테인 자산운용 글로벌 하이일드 채권형펀드에 투자"},
+    {code:"KLVL0326300",name:"더블유인덱스주식형",est:"2009-10-20",fee:0.5341,nav:4394.93,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:true, d1:-0.12,w1:1.10,m1:1.93,m3:3.69,m6:11.78,y1:20.05,y3:67.05,y5:49.85,cum:279.65,desc:"▶ 글로벌 주식에 투자하며, 미국 주식 비중이 가장 높고, 그 외 유럽, 일본 등 선진국과 신흥국, 글로벌 업종/스타일/섹터로 세분화하여 투자하는 ETF 등에 일부 투자"},
+    {code:"KLVL0327310",name:"목표수익추구형",est:"2020-05-04",fee:0.5462,nav:15.14,cat:"기타",daetype:"해외투자",sotype:"기타형",b2601:false, d1:-0.51,w1:-0.25,m1:1.27,m3:2.91,m6:3.14,y1:10.71,y3:24.19,y5:27.34,cum:45.08,desc:"▶ 적극적인 자산배분을 통해 장기적인 관점에서 채권 이자수익 대비 초과 수익률을 추구하도록 포트폴리오를 구성, DWS운용사의 컨셉 칼데모르겐 펀드를 중심으로 투자"},
+    {code:"KLVL0326340",name:"미국블루칩인덱스주식형",est:"2012-09-17",fee:0.5341,nav:3359.30,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:true, d1:-0.26,w1:0.94,m1:1.67,m3:3.73,m6:14.66,y1:21.55,y3:74.56,y5:64.85,cum:366.62,desc:"▶ 미국 주식에 투자하며 S&P500지수 및 나스닥지수 종목에 투자하고, 일부 섹터 및 업종 ETF에 추가로 투자"},
+    {code:"KLVL0327290",name:"미국액티브주식형",est:"2020-05-04",fee:0.5478,nav:575.16,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.28,w1:0.76,m1:2.01,m3:4.12,m6:10.00,y1:10.28,y3:58.73,y5:47.03,cum:115.56,desc:"▶ 미국 상장 주식 중 성장성이 높은 기업들에 주로 투자하는 JP모건의 US GROWTH 펀드를 중심으로 투자"},
+    {code:"KLVL0326470",name:"배당가치주식형",est:"2018-05-02",fee:0.5394,nav:19.80,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:false, d1:0.34,w1:8.84,m1:-3.72,m3:-3.12,m6:16.88,y1:84.90,y3:149.56,y5:144.51,cum:214.04,desc:""},
+    {code:"KLVL0326250",name:"배당주주식형",est:"2009-10-20",fee:0.9471,nav:2039.57,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:-1.51,w1:5.88,m1:0.46,m3:-0.37,m6:9.05,y1:76.16,y3:142.72,y5:137.50,cum:345.28,desc:"▶ 주로 국내 코스피 및 코스닥의 배당성향이 높은 대형주를 중심으로 구성된 ETF에 투자하거나, 개별종목에 직접투자"},
+    {code:"KLVL0326310",name:"브릭스주식형",est:"2010-01-19",fee:0.9222,nav:11.30,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:0.16,w1:-2.09,m1:-0.04,m3:-1.10,m6:-9.11,y1:-5.38,y3:6.67,y5:-20.82,cum:-21.86,desc:"▶ 브라질, 러시아, 인도, 중국 주식 ETF에 주로 투자하며 투자 전략상 국가별 비중 조정으로 수익 제고를 추구"},
+    {code:"KLVL0326280",name:"삼성그룹주식형",est:"2009-10-20",fee:0.5336,nav:6559.40,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:-3.04,w1:6.64,m1:4.82,m3:3.28,m6:40.92,y1:160.26,y3:195.94,y5:157.88,cum:458.57,desc:"▶ 삼성그룹 계열사를 투자대상으로 하며 관련 ETF에 주로 투자"},
+    {code:"KLVL0326330",name:"업종대표알파주식형",est:"2012-05-11",fee:0.8935,nav:531.61,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:false, d1:-1.55,w1:9.83,m1:-0.66,m3:-5.75,m6:26.80,y1:140.33,y3:210.07,y5:160.58,cum:400.26,desc:"▶ 국내 주식의 각 업종을 대표하는 대형주 위주 종목으로 구성된 ETF와 개별종목에 직접 투자하고 업종/섹터별 ETF에도 투자/코스닥 등 중소형주에 전략적으로 추가 투자"},
+    {code:"KLVL0326400",name:"유럽인덱스주식형",est:"2015-10-06",fee:0.5363,nav:159.52,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.40,w1:-0.55,m1:1.90,m3:7.32,m6:6.02,y1:20.40,y3:51.73,y5:54.19,cum:129.99,desc:"▶ 유럽의 STOXX600지수를 구성하는 종목에 투자하며 주로 ETF를 통하여 투자"},
+    {code:"KLVL0326540",name:"이머징인덱스주식형",est:"2019-05-02",fee:0.5377,nav:58.96,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:1.27,w1:3.97,m1:3.55,m3:3.93,m6:2.11,y1:16.03,y3:39.12,y5:16.01,cum:28.89,desc:"▶ 신흥국 시장의 대표 우량 종목 위주로 구성된 지수를 추종하는 ETF 등에 주로 투자"},
+    {code:"KLVL0326370",name:"이머징채권형",est:"2013-08-20",fee:0.2085,nav:12.12,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:-0.49,w1:-0.11,m1:-0.56,m3:0.91,m6:-0.69,y1:3.97,y3:19.35,y5:0.22,cum:39.90,desc:"▶ 이머징 국가의 채권에 투자하는 ETF인 아비바 이머징마켓 채권형 펀드에 투자. 주로 신흥국의 국채 및 우량한 회사채 중심으로 투자"},
+    {code:"KLVL0327050",name:"장기채권형",est:"2020-05-04",fee:0.3635,nav:2236.19,cat:"글로벌채권",daetype:"국내외투자",sotype:"채권형",b2601:true, d1:-1.12,w1:-0.82,m1:-2.35,m3:-4.74,m6:-12.14,y1:-20.76,y3:-4.55,y5:-20.94,cum:-22.54,desc:"▶ 국내 채권에 투자하며 현재는 10년 이상 만기의 장기 국고채 위주로 투자"},
+    {code:"KLVL0326410",name:"중국인덱스주식형",est:"2015-10-06",fee:0.5366,nav:76.12,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:1.26,w1:0.71,m1:-0.46,m3:-0.44,m6:3.71,y1:19.59,y3:32.54,y5:2.68,cum:41.20,desc:"▶ 중국의 상해거래소 및 선전(심천)거래소에 상장되어 있는 중국 A주 대형주 300종목으로 구성된 ETF에 주로 투자"},
+    {code:"KLVL0326010",name:"채권형",est:"2015-02-04",fee:0.3856,nav:8128.55,cat:"글로벌채권",daetype:"국내외투자",sotype:"채권형",b2601:true, d1:-0.19,w1:-0.22,m1:-0.32,m3:-0.85,m6:-3.52,y1:-6.01,y3:6.16,y5:-1.28,cum:10.58,desc:"▶ 해외 채권 ETF 및 펀드, 미국 국채 등에 최대 30% 투자하고, 나머지는 국내 국고채, 채권 ETF 및 펀드, 국내 공기업 및 우량한 회사채 등에 투자"},
+    {code:"KLVL0326290",name:"케이인덱스주식형",est:"2009-10-20",fee:0.4935,nav:27037.44,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:-1.41,w1:9.35,m1:-0.26,m3:-4.05,m6:29.06,y1:152.62,y3:241.78,y5:181.58,cum:481.83,desc:"▶ KOSPI200지수를 추종하는 다양한 ETF에 투자"}
+  ];
+
+  var CAT_ORDER = ["전체","국내주식","글로벌주식","국내채권","글로벌채권","자산배분","기타"];
+  var COLUMNS = [
+    {key:"cat", label:"카테고리", type:"text"},
+    {key:"name", label:"펀드명", type:"text"},
+    {key:"est", label:"설정일", type:"text"},
+    {key:"fee", label:"총보수(%)", type:"pct1"},
+    {key:"nav", label:"순자산액(억)", type:"num"},
+    {key:"desc", label:"펀드설명", type:"desc"},
+    {key:"d1", label:"1일(%)", type:"pct"},
+    {key:"w1", label:"1주(%)", type:"pct"},
+    {key:"m1", label:"1개월(%)", type:"pct"},
+    {key:"m3", label:"3개월(%)", type:"pct"},
+    {key:"m6", label:"6개월(%)", type:"pct"},
+    {key:"y1", label:"1년(%)", type:"pct"},
+    {key:"y3", label:"3년(%)", type:"pct"},
+    {key:"y5", label:"5년(%)", type:"pct"},
+    {key:"cum", label:"누적(%)", type:"pct"},
+    {key:"b2601", label:"탄탄한 변액연금(B2601)", type:"flag"}
+  ];
+
+  var state = { cat: "전체", search: "", sortKey: "cat", sortDir: 1 };
+  var BOTTOM_CODES = ["KLVL0326350","KLVL0326360","KLVL0326390","KLVL0326430","KLVL0326440","KLVL0326460","KLVL0326470"];
+  function tierOf(f) {
+    if (f.b2601) return 0;
+    if (BOTTOM_CODES.indexOf(f.code) !== -1) return 2;
+    return 1;
+  }
+
+  // ---- helpers ----------------------------------------------------------
+  function fmtPct(v) {
+    if (v === null || v === undefined) return null;
+    var s = v.toFixed(2) + "%";
+    return (v > 0 ? "+" + s : s);
+  }
+  function pctClass(v) {
+    if (v === null || v === undefined) return "na";
+    if (v > 0) return "rise";
+    if (v < 0) return "fall";
+    return "flat";
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+
+  function filteredSorted() {
+    var list = FUNDS.filter(function (f) {
+      if (state.cat !== "전체" && f.cat !== state.cat) return false;
+      if (state.search && f.name.toLowerCase().indexOf(state.search.toLowerCase()) === -1 && f.code.toLowerCase().indexOf(state.search.toLowerCase()) === -1) return false;
+      return true;
+    });
+    var key = state.sortKey, dir = state.sortDir;
+    var PINNED_TOP = "KLVL0326450";
+    list.sort(function (a, b) {
+      if (a.code === PINNED_TOP && b.code !== PINNED_TOP) return -1;
+      if (b.code === PINNED_TOP && a.code !== PINNED_TOP) return 1;
+      var ta = tierOf(a), tb = tierOf(b);
+      if (ta !== tb) return ta - tb;
+      var av = a[key], bv = b[key];
+      if (key === "cat") { av = CAT_ORDER.indexOf(a.cat); bv = CAT_ORDER.indexOf(b.cat); }
+      if (av === null || av === undefined) av = -Infinity;
+      if (bv === null || bv === undefined) bv = -Infinity;
+      if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return a.name.localeCompare(b.name, "ko");
+    });
+    return list;
+  }
+
+  // ---- TOP5 ---------------------------------------------------------------
+  var TOP5_SPECS = [
+    {label: "1주 수익률", key: "w1"},
+    {label: "1개월 수익률", key: "m1"},
+    {label: "3개월 수익률", key: "m3"},
+    {label: "6개월 수익률", key: "m6"}
+  ];
+
+  function renderTop5() {
+    var grid = document.getElementById("top5Grid");
+    grid.innerHTML = "";
+    TOP5_SPECS.forEach(function (spec) {
+      var ranked = FUNDS.slice().sort(function (a, b) { return b[spec.key] - a[spec.key]; }).slice(0, 5);
+      var card = document.createElement("div");
+      card.className = "top5-card";
+      var html = '<h3>' + spec.label + '<span class="period-badge">TOP 5</span></h3><ul class="top5-list">';
+      ranked.forEach(function (f, i) {
+        html += '<li><span class="rank-badge">' + (i + 1) + '</span>' +
+          '<span class="top5-name">' + esc(f.name) + '<span class="top5-cat">' + esc(f.cat) + '</span></span>' +
+          '<span class="top5-val ' + pctClass(f[spec.key]) + ' tabular">' + fmtPct(f[spec.key]) + '</span></li>';
+      });
+      html += "</ul>";
+      card.innerHTML = html;
+      grid.appendChild(card);
+    });
+  }
+
+  // ---- filter chips -------------------------------------------------------
+  function renderChips() {
+    var row = document.getElementById("chipRow");
+    // remove existing chips (keep search box)
+    Array.prototype.slice.call(row.querySelectorAll(".chip")).forEach(function (c) { c.remove(); });
+    var searchBox = row.querySelector(".search-box");
+    CAT_ORDER.forEach(function (cat) {
+      var count = cat === "전체" ? FUNDS.length : FUNDS.filter(function (f) { return f.cat === cat; }).length;
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip" + (state.cat === cat ? " active" : "");
+      chip.textContent = cat + " (" + count + ")";
+      chip.addEventListener("click", function () { state.cat = cat; render(); });
+      row.insertBefore(chip, searchBox);
+    });
+  }
+
+  // ---- table ----------------------------------------------------------
+  function renderHead() {
+    var tr = document.getElementById("headRow");
+    tr.innerHTML = "";
+    COLUMNS.forEach(function (col) {
+      var th = document.createElement("th");
+      var arrow = state.sortKey === col.key ? (state.sortDir === 1 ? "▲" : "▼") : "◇";
+      th.innerHTML = esc(col.label) + '<span class="sort-arrow">' + arrow + "</span>";
+      if (state.sortKey === col.key) th.classList.add("sorted");
+      th.addEventListener("click", function () {
+        if (state.sortKey === col.key) { state.sortDir *= -1; }
+        else { state.sortKey = col.key; state.sortDir = (col.type === "text") ? 1 : -1; }
+        render();
+      });
+      tr.appendChild(th);
+    });
+  }
+
+  function cellHTML(f, col) {
+    var v = f[col.key];
+    if (col.type === "text") return esc(v);
+    if (col.type === "num") return '<span class="tabular">' + Number(v).toLocaleString("ko-KR", {maximumFractionDigits: 1}) + "</span>";
+    if (col.type === "pct1") return '<span class="tabular">' + Number(v).toFixed(2) + "%</span>";
+    if (col.type === "pct") {
+      var s = fmtPct(v);
+      return s === null ? '<span class="na">—</span>' : '<span class="' + pctClass(v) + ' tabular">' + s + "</span>";
+    }
+    if (col.type === "flag") return v ? '<span class="b2601-flag">●</span>' : '<span class="na">–</span>';
+    return esc(v);
+  }
+
+  function renderBody() {
+    var tbody = document.getElementById("tableBody");
+    var list = filteredSorted();
+    var rowsHtml = list.map(function (f) {
+      var tds = COLUMNS.map(function (col, i) {
+        var cls = col.key === "name" ? ' class="fund-name"' : "";
+        if (col.key === "cat") return "<td><span class=\"cat-pill\">" + esc(f.cat) + "</span></td>";
+        if (col.key === "desc") return f.desc ? ("<td class=\"desc-cell\">" + esc(f.desc) + "</td>") : '<td class="desc-cell na">—</td>';
+        return "<td" + cls + ">" + cellHTML(f, col) + "</td>";
+      }).join("");
+      return "<tr>" + tds + "</tr>";
+    }).join("");
+    tbody.innerHTML = rowsHtml || '<tr><td colspan="' + COLUMNS.length + '" style="text-align:center;color:var(--ink-faint);padding:28px;">조건에 맞는 펀드가 없습니다.</td></tr>';
+    var countText = list.length + " / " + FUNDS.length + "개 펀드 표시 중";
+    document.getElementById("rowCountTop").textContent = countText;
+    document.getElementById("rowCountBottom").textContent = countText;
+  }
+
+  function render() {
+    renderChips();
+    renderHead();
+    renderBody();
+  }
+
+  // ---- wire up ----------------------------------------------------------
+  document.getElementById("searchInput").addEventListener("input", function (e) {
+    state.search = e.target.value;
+    renderBody();
+  });
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    state.cat = "전체"; state.search = "";
+    document.getElementById("searchInput").value = "";
+    render();
+  });
+  renderTop5();
+  render();
+})();
+</script>
