@@ -5,6 +5,7 @@ GitHub Actions에서 매일 실행되어 index.html을 최신 데이터로 갱�
 """
 import re
 import json
+import time
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -21,6 +22,19 @@ HEADERS = {
 }
 
 KST = ZoneInfo("Asia/Seoul")
+
+
+def http_get(url, retries=4, backoff=8):
+    last_exc = None
+    for attempt in range(retries):
+        try:
+            return requests.get(url, headers=HEADERS, timeout=30)
+        except requests.exceptions.RequestException as e:
+            last_exc = e
+            print(f"  request failed (attempt {attempt + 1}/{retries}): {e}")
+            if attempt < retries - 1:
+                time.sleep(backoff)
+    raise last_exc
 
 
 def pct_cell(td):
@@ -41,7 +55,7 @@ def pct_cell(td):
 
 def fetch_base(std_date, page):
     url = f"https://pub.insure.or.kr/compareDis/variableInsrn/fundDay/list.do?pageIndex={page}&search_stdYmd={std_date}&search_item=itemTypeAll&search_memberCd=L03&pageUnit=30"
-    r = requests.get(url, headers=HEADERS, timeout=20)
+    r = http_get(url)
     soup = BeautifulSoup(r.text, "lxml")
     out = []
     for tr in soup.select("table tbody tr"):
@@ -69,7 +83,7 @@ def fetch_period(std_date, from_date):
     out = []
     for page in [1, 2, 3, 4]:
         url = f"https://pub.insure.or.kr/compareDis/variableInsrn/fundDay/list.do?pageIndex={page}&search_stdYmd={std_date}&search_item=itemTypeComp&search_stdStartYmd={from_date}&search_stdEndYmd={std_date}&search_memberCd=L03&pageUnit=30"
-        r = requests.get(url, headers=HEADERS, timeout=20)
+        r = http_get(url)
         soup = BeautifulSoup(r.text, "lxml")
         for tr in soup.select("table tbody tr"):
             lbl = tr.select_one('label[id^="l_fundCd_"]')
@@ -90,8 +104,24 @@ def numfmt(v, dec=2):
     return ("%." + str(dec) + "f") % v
 
 
+def current_std_date():
+    try:
+        html = open("index.html", encoding="utf-8").read()
+    except FileNotFoundError:
+        return None
+    m = re.search(r'id="stdDateInput"[^>]*value="(\d{4}-\d{2}-\d{2})"', html)
+    return m.group(1) if m else None
+
+
 def main():
     today = datetime.now(KST).date()
+    today_str = today.strftime("%Y-%m-%d")
+
+    existing = current_std_date()
+    if existing is not None and existing >= today_str:
+        print(f"index.html already reflects {existing} (today is {today_str}) — skipping fetch")
+        return
+
     std_date = today
 
     # If today has zero matches (site not updated yet, or weekend), step back to the
