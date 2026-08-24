@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>삼성생명 변액보험 펀드 수익률 대시보드</title>
 <style>
   :root {
@@ -216,12 +217,20 @@
       <h1>삼성생명 변액보험 펀드 수익률 대시보드</h1>
       <div class="std-date-row">
         <span class="std-date-label">기준일자</span>
-        <input class="std-date-input tabular" id="stdDateInput" type="text" value="2026-08-24" aria-label="기준일자">
+        <input class="std-date-input tabular" id="stdDateInput" type="text" value="2026-08-24" aria-label="기준일자" readonly>
         <span class="refresh-note">이 화면은 위 날짜 기준 스냅샷입니다. 매 영업일 자동으로 최신 데이터로 갱신됩니다.</span>
+      </div>
+      <div class="std-date-row">
+        <span class="std-date-label">다른 날짜 조회</span>
+        <select class="std-date-input tabular" id="histDateSelect" aria-label="조회할 기준일자">
+          <option value="">최신 (기준일자와 동일)</option>
+        </select>
+        <span class="refresh-note">자동 수집된 날짜만 선택할 수 있으며, 매 영업일 하루씩 늘어납니다.</span>
       </div>
       <div id="autoStatusLine" class="auto-status-line"></div>
     </div>
     <div class="topbar-actions">
+      <button class="btn btn-ghost" id="exportBtn" type="button">엑셀 다운로드</button>
       <button class="btn btn-ghost" id="resetBtn" type="button">필터 초기화</button>
     </div>
   </div>
@@ -318,6 +327,9 @@
     {code:"KLVL0326290",name:"케이인덱스주식형",est:"2009-10-20",fee:0.4935,nav:27380.99,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:-0.00,w1:-0.11,m1:3.54,m3:-10.76,m6:23.93,y1:156.63,y3:245.59,y5:191.26,cum:489.50,desc:"▶ KOSPI200지수를 추종하는 다양한 ETF에 투자"}
   ];
 
+  var activeFunds = FUNDS;
+  var activeDate = document.getElementById("stdDateInput").value;
+
   var CAT_ORDER = ["전체","국내주식","글로벌주식","국내채권","글로벌채권","자산배분","기타"];
   var COLUMNS = [
     {key:"cat", label:"카테고리", type:"text"},
@@ -361,7 +373,7 @@
   function esc(s) { return String(s).replace(/[&<>"']/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 
   function filteredSorted() {
-    var list = FUNDS.filter(function (f) {
+    var list = activeFunds.filter(function (f) {
       if (state.cat !== "전체" && f.cat !== state.cat) return false;
       if (state.search && f.name.toLowerCase().indexOf(state.search.toLowerCase()) === -1 && f.code.toLowerCase().indexOf(state.search.toLowerCase()) === -1) return false;
       return true;
@@ -397,7 +409,7 @@
     var grid = document.getElementById("top5Grid");
     grid.innerHTML = "";
     TOP5_SPECS.forEach(function (spec) {
-      var ranked = FUNDS.slice().sort(function (a, b) { return b[spec.key] - a[spec.key]; }).slice(0, 5);
+      var ranked = activeFunds.slice().sort(function (a, b) { return b[spec.key] - a[spec.key]; }).slice(0, 5);
       var card = document.createElement("div");
       card.className = "top5-card";
       var html = '<h3>' + spec.label + '<span class="period-badge">TOP 5</span></h3><ul class="top5-list">';
@@ -419,7 +431,7 @@
     Array.prototype.slice.call(row.querySelectorAll(".chip")).forEach(function (c) { c.remove(); });
     var searchBox = row.querySelector(".search-box");
     CAT_ORDER.forEach(function (cat) {
-      var count = cat === "전체" ? FUNDS.length : FUNDS.filter(function (f) { return f.cat === cat; }).length;
+      var count = cat === "전체" ? activeFunds.length : activeFunds.filter(function (f) { return f.cat === cat; }).length;
       var chip = document.createElement("button");
       chip.type = "button";
       chip.className = "chip" + (state.cat === cat ? " active" : "");
@@ -473,7 +485,7 @@
       return "<tr>" + tds + "</tr>";
     }).join("");
     tbody.innerHTML = rowsHtml || '<tr><td colspan="' + COLUMNS.length + '" style="text-align:center;color:var(--ink-faint);padding:28px;">조건에 맞는 펀드가 없습니다.</td></tr>';
-    var countText = list.length + " / " + FUNDS.length + "개 펀드 표시 중";
+    var countText = list.length + " / " + activeFunds.length + "개 펀드 표시 중";
     document.getElementById("rowCountTop").textContent = countText;
     document.getElementById("rowCountBottom").textContent = countText;
   }
@@ -482,6 +494,73 @@
     renderChips();
     renderHead();
     renderBody();
+  }
+
+  // ---- CSV export -------------------------------------------------------
+  function csvEscape(v) {
+    var s = v === null || v === undefined ? "" : String(v);
+    if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function csvField(f, col) {
+    var v = f[col.key];
+    if (col.type === "flag") return v ? "Y" : "N";
+    if (col.type === "pct") return v === null || v === undefined ? "" : v;
+    return v === null || v === undefined ? "" : v;
+  }
+  function exportCSV() {
+    var list = filteredSorted();
+    var rows = [COLUMNS.map(function (c) { return c.label; })];
+    list.forEach(function (f) {
+      rows.push(COLUMNS.map(function (c) { return csvField(f, c); }));
+    });
+    var csv = "﻿" + rows.map(function (r) { return r.map(csvEscape).join(","); }).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "삼성생명_변액보험_펀드_수익률_" + (activeDate || "latest") + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---- history date lookup ------------------------------------------------
+  function loadHistoryData(dateStr) {
+    if (!dateStr || dateStr === document.getElementById("stdDateInput").value) {
+      activeFunds = FUNDS;
+      activeDate = document.getElementById("stdDateInput").value;
+      renderTop5();
+      render();
+      return;
+    }
+    fetch("data/" + dateStr + ".json")
+      .then(function (r) { if (!r.ok) throw new Error("not found"); return r.json(); })
+      .then(function (json) {
+        activeFunds = json;
+        activeDate = dateStr;
+        renderTop5();
+        render();
+      })
+      .catch(function () {
+        alert(dateStr + " 데이터를 불러오지 못했습니다.");
+      });
+  }
+  function loadHistoryIndex() {
+    fetch("data/index.json")
+      .then(function (r) { if (!r.ok) throw new Error("not found"); return r.json(); })
+      .then(function (json) {
+        var dates = (json.dates || []).slice().sort().reverse();
+        var select = document.getElementById("histDateSelect");
+        dates.forEach(function (d) {
+          var opt = document.createElement("option");
+          opt.value = d;
+          opt.textContent = d;
+          select.appendChild(opt);
+        });
+      })
+      .catch(function () { /* data/ not published yet — history selector stays latest-only */ });
   }
 
   // ---- wire up ----------------------------------------------------------
@@ -494,6 +573,11 @@
     document.getElementById("searchInput").value = "";
     render();
   });
+  document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.getElementById("histDateSelect").addEventListener("change", function (e) {
+    loadHistoryData(e.target.value);
+  });
+  loadHistoryIndex();
   renderTop5();
   render();
 })();
