@@ -4,6 +4,7 @@
 GitHub Actions에서 매일 실행되어 index.html을 최신 데이터로 갱신합니다.
 """
 import re
+import os
 import json
 import time
 import requests
@@ -104,6 +105,75 @@ def numfmt(v, dec=2):
     return ("%." + str(dec) + "f") % v
 
 
+def extract_field(block, key, kind):
+    if kind == "str":
+        m = re.search(key + r':"([^"]*)"', block)
+        return m.group(1) if m else None
+    if kind == "num":
+        m = re.search(key + r':(null|[-0-9.]+)', block)
+        if not m or m.group(1) == "null":
+            return None
+        return float(m.group(1))
+    if kind == "bool":
+        m = re.search(key + r':(true|false)', block)
+        return m.group(1) == "true" if m else None
+    return None
+
+
+def parse_funds_from_html(html):
+    records = []
+    for m in re.finditer(r'\{code:"(KLVL\d+)"[\s\S]*?desc:"[^"]*"\}', html):
+        block = m.group(0)
+        records.append({
+            "code": m.group(1),
+            "name": extract_field(block, "name", "str"),
+            "est": extract_field(block, "est", "str"),
+            "fee": extract_field(block, "fee", "num"),
+            "nav": extract_field(block, "nav", "num"),
+            "cat": extract_field(block, "cat", "str"),
+            "daetype": extract_field(block, "daetype", "str"),
+            "sotype": extract_field(block, "sotype", "str"),
+            "b2601": extract_field(block, "b2601", "bool"),
+            "d1": extract_field(block, "d1", "num"),
+            "w1": extract_field(block, "w1", "num"),
+            "m1": extract_field(block, "m1", "num"),
+            "m3": extract_field(block, "m3", "num"),
+            "m6": extract_field(block, "m6", "num"),
+            "y1": extract_field(block, "y1", "num"),
+            "y3": extract_field(block, "y3", "num"),
+            "y5": extract_field(block, "y5", "num"),
+            "cum": extract_field(block, "cum", "num"),
+            "desc": extract_field(block, "desc", "str"),
+        })
+    return records
+
+
+def save_history(std_date_str, html):
+    records = parse_funds_from_html(html)
+    if len(records) != 37:
+        print(f"warning: parsed {len(records)} records for history, expected 37 — skipping history save")
+        return
+
+    os.makedirs("data", exist_ok=True)
+
+    with open(f"data/{std_date_str}.json", "w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False)
+
+    index_path = "data/index.json"
+    try:
+        with open(index_path, encoding="utf-8") as f:
+            index = json.load(f)
+    except FileNotFoundError:
+        index = {"dates": []}
+    if std_date_str not in index["dates"]:
+        index["dates"].append(std_date_str)
+        index["dates"].sort()
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False)
+
+    print(f"history saved: data/{std_date_str}.json ({len(index['dates'])} dates total)")
+
+
 def current_std_date():
     try:
         html = open("index.html", encoding="utf-8").read()
@@ -199,6 +269,8 @@ def main():
 
     open("index.html", "w", encoding="utf-8").write(new_html)
     print("index.html updated for", std_date_str)
+
+    save_history(std_date_str, new_html)
 
 
 if __name__ == "__main__":
