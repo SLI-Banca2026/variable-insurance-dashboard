@@ -175,6 +175,17 @@
   }
   thead th:nth-child(1), thead th:nth-child(2), thead th:nth-child(6) { text-align: left; }
   thead th:last-child { border-right: none; text-align: center; }
+  thead th:nth-child(1), thead th:nth-child(2) { z-index: 3; }
+  thead th:nth-child(1), tbody td:nth-child(1) {
+    position: sticky; left: 0; z-index: 2;
+    width: 92px; min-width: 92px; max-width: 92px;
+  }
+  thead th:nth-child(2), tbody td:nth-child(2) {
+    position: sticky; left: 92px; z-index: 2;
+    width: 190px; min-width: 190px; max-width: 190px;
+    overflow: hidden; text-overflow: ellipsis;
+    border-right: 1px solid var(--line-strong);
+  }
   thead th .sort-arrow { opacity: .45; margin-left: 3px; font-size: 9px; }
   thead th.sorted .sort-arrow { opacity: 1; color: var(--accent-soft); }
   thead th:hover { background: #2A3348; }
@@ -182,10 +193,12 @@
     padding: 9px 10px; font-size: 12.5px; text-align: right; border-top: 1px solid var(--line);
     white-space: nowrap;
   }
-  tbody td:nth-child(1), tbody td:nth-child(2) { text-align: left; }
+  tbody td:nth-child(1), tbody td:nth-child(2) { text-align: left; background: var(--surface); }
   tbody td:last-child { text-align: center; }
   tbody tr:nth-child(even) td { background: var(--surface-soft); }
   tbody tr:hover td { background: var(--accent-soft); }
+  tbody tr:nth-child(even) td:nth-child(1), tbody tr:nth-child(even) td:nth-child(2) { background: var(--surface-soft); }
+  tbody tr:hover td:nth-child(1), tbody tr:hover td:nth-child(2) { background: var(--accent-soft); }
   .fund-name { font-weight: 700; }
   .cat-pill {
     display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
@@ -219,13 +232,6 @@
         <span class="std-date-label">기준일자</span>
         <input class="std-date-input tabular" id="stdDateInput" type="text" value="2026-08-26" aria-label="기준일자" readonly>
         <span class="refresh-note">이 화면은 위 날짜 기준 스냅샷입니다. 매 영업일 자동으로 최신 데이터로 갱신됩니다.</span>
-      </div>
-      <div class="std-date-row">
-        <span class="std-date-label">다른 날짜 조회</span>
-        <select class="std-date-input tabular" id="histDateSelect" aria-label="조회할 기준일자">
-          <option value="">최신 (기준일자와 동일)</option>
-        </select>
-        <span class="refresh-note">자동 수집된 날짜만 선택할 수 있으며, 매 영업일 하루씩 늘어납니다.</span>
       </div>
       <div id="autoStatusLine" class="auto-status-line"></div>
     </div>
@@ -289,23 +295,23 @@
   // period returns and base returns are stored as % values (e.g. 5.89 = 5.89%)
   var FUNDS = [
     {code:"KLVL0326040",name:"MMF형",est:"2006-01-05",fee:0.1635,nav:3513.28,cat:"국내채권",daetype:"국내투자",sotype:"채권형",b2601:true, d1:0.01,w1:0.05,m1:0.28,m3:0.69,m6:1.33,y1:2.48,y3:9.87,y5:15.21,cum:62.48,desc:"▶ 1년 미만의 국내 단기채권에 투자(주로 MMF 등에 투자)"},
-    {code:"KLVL0326390",name:"One펀드-국내포커스주식형",est:"2015-07-20",fee:0.6571,nav:65.87,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:0.36,w1:-1.62,m1:1.15,m3:-12.27,m6:11.23,y1:100.65,y3:169.82,y5:131.54,cum:270.60,desc:""},
+    {code:"KLVL0326390",name:"One펀드-국내포커스주식형",est:"2015-07-20",fee:0.6571,nav:65.87,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:0.36,w1:-1.62,m1:1.15,m3:-12.27,m6:11.23,y1:100.65,y3:169.82,y5:131.54,cum:270.60,desc:"▶ 금융시장 상황을 감안하여 투자지역과 투자대상에 대한 편입비중을 국내 70%±α, 해외 30%±α로 조절하여 수익제고를 추구합니다."},
     {code:"KLVL0326380",name:"One펀드-글로벌포커스주식형",est:"2015-07-20",fee:0.7461,nav:82.26,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.19,w1:-1.47,m1:1.92,m3:-5.85,m6:8.77,y1:51.91,y3:104.63,y5:80.84,cum:174.27,desc:"▶ 전 세계 주식에 투자하되 국내는 30%, 해외는 70% 가량 투자"},
-    {code:"KLVL0326430",name:"S Selection주식형",est:"2016-02-04",fee:0.5435,nav:23.47,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:false, d1:-0.99,w1:-2.93,m1:-1.67,m3:-18.17,m6:4.87,y1:83.65,y3:131.88,y5:111.41,cum:208.57,desc:""},
-    {code:"KLVL0326460",name:"S자산배분형30",est:"2018-05-02",fee:0.4720,nav:2066.77,cat:"자산배분",daetype:"국내외투자",sotype:"채권혼합형",b2601:false, d1:-0.02,w1:-0.37,m1:1.07,m3:-2.05,m6:-0.24,y1:2.41,y3:23.60,y5:15.80,cum:28.78,desc:""},
+    {code:"KLVL0326430",name:"S Selection주식형",est:"2016-02-04",fee:0.5435,nav:23.47,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:false, d1:-0.99,w1:-2.93,m1:-1.67,m3:-18.17,m6:4.87,y1:83.65,y3:131.88,y5:111.41,cum:208.57,desc:"▶ 시장상황을 감안하여 분기별로 수익증권 등 집합투자기구의 교체 및 투자비중 조절을 통해 수익제고를 추구합니다."},
+    {code:"KLVL0326460",name:"S자산배분형30",est:"2018-05-02",fee:0.4720,nav:2066.77,cat:"자산배분",daetype:"국내외투자",sotype:"채권혼합형",b2601:false, d1:-0.02,w1:-0.37,m1:1.07,m3:-2.05,m6:-0.24,y1:2.41,y3:23.60,y5:15.80,cum:28.78,desc:"▶ 국내외 채권/주식/대체자산 등을 대상으로 글로벌 자산배분을 통해 수익제고를 추구합니다(위험자산비중 최대 30%)."},
     {code:"KLVL0326450",name:"S자산배분형50",est:"2018-05-02",fee:0.5595,nav:3662.77,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:true, d1:-0.11,w1:-1.05,m1:1.13,m3:-3.53,m6:2.09,y1:8.72,y3:37.02,y5:26.34,cum:45.88,desc:"▶ 국내 채권에 최소 50%가 투자되고 나머지는 국내외 주식에 투자\n▶ 글로벌 분산투자의 기조하에, 시장 상황 및 전망에 따라 일부 투자 대상과 비중을 조절하는 자산배분형 펀드로 분기마다 조정을 원칙으로 하나 시장상황 급변시에는 수시로 변경 가능\n▶ 해외 투자자산에 대해서는 환헤지를 원칙으로 하여 환율의 변동에 따른 추가적인 이익이나 손실은 발생하지 않음"},
-    {code:"KLVL0326440",name:"S자산배분형70",est:"2016-05-04",fee:0.6426,nav:379.70,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:false, d1:-0.20,w1:-1.82,m1:0.29,m3:-6.27,m6:4.56,y1:15.15,y3:50.85,y5:35.81,cum:75.40,desc:""},
+    {code:"KLVL0326440",name:"S자산배분형70",est:"2016-05-04",fee:0.6426,nav:379.70,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:false, d1:-0.20,w1:-1.82,m1:0.29,m3:-6.27,m6:4.56,y1:15.15,y3:50.85,y5:35.81,cum:75.40,desc:"▶ 국내외 채권/주식/대체자산 등을 대상으로 글로벌 자산배분을 통해 수익제고를 추구합니다(위험자산비중 최대 70%)."},
     {code:"KLVL0326260",name:"그로스주식형",est:"2009-10-20",fee:0.9289,nav:755.58,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:0.86,w1:-2.06,m1:0.99,m3:-21.11,m6:8.36,y1:114.86,y3:168.29,y5:117.23,cum:300.54,desc:"▶ 국내 코스피 및 코스닥 주식 종목에 직접 투자하거나 ETF등에 투자"},
     {code:"KLVL0326530",name:"글로벌대체투자",est:"2018-05-02",fee:0.5421,nav:5.62,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.51,w1:-0.51,m1:-2.86,m3:-4.11,m6:-4.29,y1:4.24,y3:32.15,y5:18.07,cum:44.09,desc:"▶ 산업의 기반이 되는 인프라, 리츠, 원자재, 에너지 등 대체투자 관련 글로벌 기업에 투자하는 DWS 자산운용의 글로벌인프라펀드를 중심으로 투자"},
     {code:"KLVL0326490",name:"글로벌마켓주식형",est:"2018-05-02",fee:0.5466,nav:6.04,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.63,w1:-2.50,m1:2.04,m3:-0.19,m6:2.66,y1:2.54,y3:34.67,y5:21.63,cum:82.36,desc:"▶ 해외 선진국 및 일부 신흥국 종목 중 장기간에 걸친 자본 성장 달성을 목표로 하는 피델리티 운용사의 글로벌포커스 펀드를 중심으로 투자"},
-    {code:"KLVL0326360",name:"글로벌선진국채권형",est:"2013-08-20",fee:0.2085,nav:16.20,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:0.18,w1:0.26,m1:0.22,m3:-0.67,m6:-1.76,y1:0.72,y3:5.62,y5:-7.76,cum:-1.43,desc:""},
+    {code:"KLVL0326360",name:"글로벌선진국채권형",est:"2013-08-20",fee:0.2085,nav:16.20,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:0.18,w1:0.26,m1:0.22,m3:-0.67,m6:-1.76,y1:0.72,y3:5.62,y5:-7.76,cum:-1.43,desc:"▶ 선진국의 국공채 및 회사채 등을 주요 투자대상으로 하는 채권형 수익증권에 주로 투자합니다."},
     {code:"KLVL0327300",name:"글로벌성장주식형",est:"2020-05-04",fee:0.5477,nav:1092.34,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.16,w1:-2.18,m1:1.01,m3:-0.30,m6:4.85,y1:14.68,y3:60.07,y5:34.66,cum:95.75,desc:"▶ 글로벌 성장 혁신 기업에 주로 투자하는 펀드들을 중심으로 투자"},
     {code:"KLVL0326480",name:"글로벌아시아주식형",est:"2018-05-02",fee:0.5453,nav:3.86,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-1.82,w1:-1.63,m1:2.06,m3:-4.25,m6:5.21,y1:30.47,y3:60.06,y5:26.82,cum:56.34,desc:"▶ 아시아 신흥 국가의 우량 주식 종목에 투자하는 슈로더 이머징 아시아펀드를 중심으로 투자"},
     {code:"KLVL0326630",name:"글로벌액티브ESG주식형",est:"2022-02-03",fee:0.5456,nav:14.51,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.10,w1:-1.03,m1:3.98,m3:2.70,m6:8.19,y1:15.23,y3:47.26,y5:null,cum:38.71,desc:"▶ 최근 중요성이 대두되고 있는 ESG(친환경/사회적 책임/지배구조 개선) 관점에 부합하면서도 지속적으로 성장할 수 있는 글로벌 기업에 투자"},
     {code:"KLVL0326620",name:"글로벌액티브S자산배분형30",est:"2022-02-03",fee:0.4973,nav:36.46,cat:"자산배분",daetype:"국내외투자",sotype:"채권혼합형",b2601:false, d1:-0.01,w1:-1.04,m1:-0.56,m3:-5.64,m6:-0.68,y1:5.05,y3:27.45,y5:null,cum:20.06,desc:"▶ 국내 및 해외채권에 최소 70%가 투자되고 나머지는 국내외 주식에 투자"},
     {code:"KLVL0326610",name:"글로벌액티브S자산배분형50",est:"2022-02-03",fee:0.5756,nav:51.67,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:false, d1:-0.17,w1:-2.05,m1:-1.27,m3:-7.99,m6:0.87,y1:10.65,y3:42.43,y5:null,cum:37.02,desc:"▶ 국내 및 해외채권에 최소 50%가 투자되고 나머지는 국내외 주식에 투자"},
     {code:"KLVL0326600",name:"글로벌액티브S자산배분형70",est:"2022-02-03",fee:0.6417,nav:62.37,cat:"자산배분",daetype:"국내외투자",sotype:"주식혼합형",b2601:false, d1:-0.34,w1:-3.19,m1:-1.95,m3:-10.33,m6:2.85,y1:16.89,y3:58.46,y5:null,cum:54.73,desc:"▶ 국내 및 해외채권에 최소 30%가 투자되고 나머지는 국내외 주식에 투자"},
-    {code:"KLVL0326350",name:"글로벌자산배분채권형",est:"2013-08-20",fee:0.2254,nav:11.37,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:0.12,w1:0.16,m1:0.27,m3:-0.48,m6:-1.20,y1:0.86,y3:7.77,y5:-5.13,cum:16.45,desc:""},
+    {code:"KLVL0326350",name:"글로벌자산배분채권형",est:"2013-08-20",fee:0.2254,nav:11.37,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:0.12,w1:0.16,m1:0.27,m3:-0.48,m6:-1.20,y1:0.86,y3:7.77,y5:-5.13,cum:16.45,desc:"▶ 글로벌 채권에 투자하는 수익증권으로 포트폴리오를 구성하여 수익 제고를 추구합니다."},
     {code:"KLVL0326500",name:"글로벌테마주식형",est:"2018-05-02",fee:0.5470,nav:5.27,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.87,w1:-3.51,m1:0.43,m3:-3.95,m6:4.83,y1:16.57,y3:42.25,y5:15.57,cum:71.77,desc:"▶ 글로벌 유망 섹터인 인구구조의 변화에 따른 관련 종목에 투자하는 피델리티 글로벌 데모그래픽스 펀드를 중심으로 투자"},
     {code:"KLVL0326520",name:"글로벌테크놀로지",est:"2018-05-02",fee:0.5469,nav:102.79,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-1.66,w1:-4.99,m1:0.14,m3:-2.98,m6:18.42,y1:25.90,y3:91.60,y5:46.01,cum:230.51,desc:"▶ 글로벌 기술주 중 성장성과 수익성을 가진 기업에 주로 투자하는 프랭클린템플턴 테크놀로지 펀드에 투자"},
     {code:"KLVL0326510",name:"글로벌하이일드채권형",est:"2018-05-02",fee:0.2085,nav:90.20,cat:"글로벌채권",daetype:"해외투자",sotype:"채권형",b2601:false, d1:0.07,w1:-0.01,m1:0.72,m3:0.26,m6:0.51,y1:2.72,y3:18.19,y5:9.51,cum:21.31,desc:"▶ 선진국 및 이머징국가의 고수익채권(하이일드채권)등에 주로 투자하는 알리안츠 번스테인 자산운용 글로벌 하이일드 채권형펀드에 투자"},
@@ -313,7 +319,7 @@
     {code:"KLVL0327310",name:"목표수익추구형",est:"2020-05-04",fee:0.5462,nav:15.09,cat:"기타",daetype:"해외투자",sotype:"기타형",b2601:false, d1:0.06,w1:-0.37,m1:1.70,m3:1.09,m6:1.79,y1:9.87,y3:22.88,y5:26.61,cum:44.54,desc:"▶ 적극적인 자산배분을 통해 장기적인 관점에서 채권 이자수익 대비 초과 수익률을 추구하도록 포트폴리오를 구성, DWS운용사의 컨셉 칼데모르겐 펀드를 중심으로 투자"},
     {code:"KLVL0326340",name:"미국블루칩인덱스주식형",est:"2012-09-17",fee:0.5341,nav:3256.72,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:true, d1:-0.70,w1:-2.86,m1:1.29,m3:-2.95,m6:10.07,y1:18.15,y3:69.48,y5:58.10,cum:353.29,desc:"▶ 미국 주식에 투자하며 S&P500지수 및 나스닥지수 종목에 투자하고, 일부 섹터 및 업종 ETF에 추가로 투자"},
     {code:"KLVL0327290",name:"미국액티브주식형",est:"2020-05-04",fee:0.5478,nav:559.42,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-0.47,w1:-2.63,m1:1.60,m3:-1.26,m6:6.47,y1:8.51,y3:52.27,y5:40.98,cum:109.90,desc:"▶ 미국 상장 주식 중 성장성이 높은 기업들에 주로 투자하는 JP모건의 US GROWTH 펀드를 중심으로 투자"},
-    {code:"KLVL0326470",name:"배당가치주식형",est:"2018-05-02",fee:0.5394,nav:18.88,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:false, d1:-1.29,w1:-2.73,m1:-3.89,m3:-12.68,m6:6.26,y1:82.73,y3:141.04,y5:138.38,cum:205.48,desc:""},
+    {code:"KLVL0326470",name:"배당가치주식형",est:"2018-05-02",fee:0.5394,nav:18.88,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:false, d1:-1.29,w1:-2.73,m1:-3.89,m3:-12.68,m6:6.26,y1:82.73,y3:141.04,y5:138.38,cum:205.48,desc:"▶ 고배당종목 관련 수익증권 위주로 포트폴리오를 구성하여 추가적인 배당수익을 도모합니다."},
     {code:"KLVL0326250",name:"배당주주식형",est:"2009-10-20",fee:0.9471,nav:1995.58,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:1.02,w1:-1.55,m1:0.89,m3:-10.05,m6:-0.43,y1:71.94,y3:137.05,y5:133.46,cum:338.38,desc:"▶ 주로 국내 코스피 및 코스닥의 배당성향이 높은 대형주를 중심으로 구성된 ETF에 투자하거나, 개별종목에 직접투자"},
     {code:"KLVL0326310",name:"브릭스주식형",est:"2010-01-19",fee:0.9222,nav:9.88,cat:"글로벌주식",daetype:"해외투자",sotype:"주식형",b2601:false, d1:-1.11,w1:-0.62,m1:0.32,m3:-2.50,m6:-9.48,y1:-7.47,y3:6.02,y5:-22.65,cum:-22.34,desc:"▶ 브라질, 러시아, 인도, 중국 주식 ETF에 주로 투자하며 투자 전략상 국가별 비중 조정으로 수익 제고를 추구"},
     {code:"KLVL0326280",name:"삼성그룹주식형",est:"2009-10-20",fee:0.5336,nav:6374.98,cat:"국내주식",daetype:"국내투자",sotype:"주식형",b2601:true, d1:1.08,w1:-2.53,m1:2.10,m3:-14.12,m6:23.27,y1:148.92,y3:188.16,y5:156.11,cum:444.42,desc:"▶ 삼성그룹 계열사를 투자대상으로 하며 관련 ETF에 주로 투자"},
@@ -526,43 +532,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // ---- history date lookup ------------------------------------------------
-  function loadHistoryData(dateStr) {
-    if (!dateStr || dateStr === document.getElementById("stdDateInput").value) {
-      activeFunds = FUNDS;
-      activeDate = document.getElementById("stdDateInput").value;
-      renderTop5();
-      render();
-      return;
-    }
-    fetch("data/" + dateStr + ".json")
-      .then(function (r) { if (!r.ok) throw new Error("not found"); return r.json(); })
-      .then(function (json) {
-        activeFunds = json;
-        activeDate = dateStr;
-        renderTop5();
-        render();
-      })
-      .catch(function () {
-        alert(dateStr + " 데이터를 불러오지 못했습니다.");
-      });
-  }
-  function loadHistoryIndex() {
-    fetch("data/index.json")
-      .then(function (r) { if (!r.ok) throw new Error("not found"); return r.json(); })
-      .then(function (json) {
-        var dates = (json.dates || []).slice().sort().reverse();
-        var select = document.getElementById("histDateSelect");
-        dates.forEach(function (d) {
-          var opt = document.createElement("option");
-          opt.value = d;
-          opt.textContent = d;
-          select.appendChild(opt);
-        });
-      })
-      .catch(function () { /* data/ not published yet — history selector stays latest-only */ });
-  }
-
   // ---- wire up ----------------------------------------------------------
   document.getElementById("searchInput").addEventListener("input", function (e) {
     state.search = e.target.value;
@@ -574,10 +543,6 @@
     render();
   });
   document.getElementById("exportBtn").addEventListener("click", exportCSV);
-  document.getElementById("histDateSelect").addEventListener("change", function (e) {
-    loadHistoryData(e.target.value);
-  });
-  loadHistoryIndex();
   renderTop5();
   render();
 })();
