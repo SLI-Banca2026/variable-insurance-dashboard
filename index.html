@@ -287,6 +287,7 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -502,34 +503,140 @@
     renderBody();
   }
 
-  // ---- CSV export -------------------------------------------------------
-  function csvEscape(v) {
-    var s = v === null || v === undefined ? "" : String(v);
-    if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  // ---- styled Excel export ------------------------------------------------
+  var CAT_COLORS = {
+    "국내주식": "FFD9F2E3",
+    "글로벌주식": "FFDCEBFA",
+    "국내채권": "FFFDEBD3",
+    "글로벌채권": "FFE3E8FC",
+    "자산배분": "FFF3E0F7",
+    "기타": "FFE8E8E8"
+  };
+  var PERIOD_COLS = [
+    {key: "d1", label: "1일"}, {key: "w1", label: "1주"}, {key: "m1", label: "1개월"},
+    {key: "m3", label: "3개월"}, {key: "m6", label: "6개월"}, {key: "y1", label: "1년"},
+    {key: "y3", label: "3년"}, {key: "y5", label: "5년"}, {key: "cum", label: "누적"}
+  ];
+  function colToLetter(n) {
+    var s = "";
+    while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
     return s;
   }
-  function csvField(f, col) {
-    var v = f[col.key];
-    if (col.type === "flag") return v ? "Y" : "N";
-    if (col.type === "pct") return v === null || v === undefined ? "" : v;
-    return v === null || v === undefined ? "" : v;
-  }
-  function exportCSV() {
+  function exportXLSX() {
     var list = filteredSorted();
-    var rows = [COLUMNS.map(function (c) { return c.label; })];
-    list.forEach(function (f) {
-      rows.push(COLUMNS.map(function (c) { return csvField(f, c); }));
+    var b2601Rows = list.filter(function (f) { return f.b2601; });
+    var restByCat = {};
+    CAT_ORDER.slice(1).forEach(function (c) { restByCat[c] = []; });
+    list.forEach(function (f) { if (!f.b2601) restByCat[f.cat].push(f); });
+
+    var groups = [{ label: "탄탄한 변액연금\n(B2601)", color: "FFFFF3C4", rows: b2601Rows }];
+    CAT_ORDER.slice(1).forEach(function (c) {
+      if (restByCat[c].length) groups.push({ label: c, color: CAT_COLORS[c], rows: restByCat[c] });
     });
-    var csv = "﻿" + rows.map(function (r) { return r.map(csvEscape).join(","); }).join("\r\n");
-    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = "삼성생명_변액보험_펀드_수익률_" + (activeDate || "latest") + ".csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    var totalCols = 6 + PERIOD_COLS.length; // 카테고리,펀드명,설정일,총보수,순자산액,펀드특징 + 기간들
+    var returnColStart = 7;
+
+    var wb = new ExcelJS.Workbook();
+    var ws = wb.addWorksheet("펀드현황");
+
+    ws.columns = [{ width: 14 }, { width: 24 }, { width: 12 }, { width: 10 }, { width: 12 }, { width: 48 }]
+      .concat(PERIOD_COLS.map(function () { return { width: 9 }; }));
+
+    var displayDate = activeDate || document.getElementById("stdDateInput").value;
+
+    ws.mergeCells(1, 1, 1, totalCols);
+    var titleCell = ws.getCell(1, 1);
+    titleCell.value = "삼성생명 변액보험 펀드 수익률 안내";
+    titleCell.font = { size: 18, bold: true, color: { argb: "FF1C2333" } };
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
+    ws.getRow(1).height = 30;
+
+    ws.mergeCells(2, 1, 2, totalCols);
+    var dateCell = ws.getCell(2, 1);
+    dateCell.value = "(" + displayDate + " 기준, 출처: 생명보험협회 공시실)";
+    dateCell.font = { size: 10.5, bold: true, color: { argb: "FF7A5620" } };
+    dateCell.alignment = { horizontal: "right" };
+    ws.getRow(2).height = 18;
+
+    var headerRowIdx = 3;
+    var headers = ["카테고리", "펀드명", "설정일", "총보수(%)", "순자산액(억)", "펀드특징"]
+      .concat(PERIOD_COLS.map(function (p) { return p.label + "(%)"; }));
+    headers.forEach(function (h, i) {
+      var c = ws.getCell(headerRowIdx, i + 1);
+      c.value = h;
+      c.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1C2333" } };
+      c.alignment = { horizontal: "center", vertical: "middle" };
+    });
+    ws.getRow(headerRowIdx).height = 22;
+
+    var rowIdx = headerRowIdx + 1;
+    groups.forEach(function (g) {
+      if (!g.rows.length) return;
+      var startRow = rowIdx;
+      g.rows.forEach(function (f) {
+        var row = ws.getRow(rowIdx);
+        row.getCell(2).value = f.name;
+        row.getCell(3).value = f.est;
+        row.getCell(4).value = f.fee;
+        row.getCell(4).numFmt = '0.00"%"';
+        row.getCell(5).value = f.nav;
+        row.getCell(5).numFmt = "#,##0.0";
+        row.getCell(6).value = f.desc || "";
+        row.getCell(6).alignment = { wrapText: true, vertical: "top" };
+        PERIOD_COLS.forEach(function (p, i) {
+          var cell = row.getCell(returnColStart + i);
+          cell.value = f[p.key] === null || f[p.key] === undefined ? null : f[p.key] / 100;
+          cell.numFmt = '+0.00%;-0.00%';
+        });
+        rowIdx++;
+      });
+      var endRow = rowIdx - 1;
+      ws.mergeCells(startRow, 1, endRow, 1);
+      var catCell = ws.getCell(startRow, 1);
+      catCell.value = g.label;
+      catCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: g.color } };
+      catCell.font = { bold: true };
+      catCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    });
+
+    var lastRow = rowIdx - 1;
+    for (var r = headerRowIdx; r <= lastRow; r++) {
+      for (var c = 1; c <= totalCols; c++) {
+        ws.getCell(r, c).border = {
+          top: { style: "thin", color: { argb: "FFD6CFBD" } },
+          bottom: { style: "thin", color: { argb: "FFD6CFBD" } },
+          left: { style: "thin", color: { argb: "FFD6CFBD" } },
+          right: { style: "thin", color: { argb: "FFD6CFBD" } }
+        };
+      }
+    }
+
+    var firstDataRow = headerRowIdx + 1;
+    PERIOD_COLS.forEach(function (p, i) {
+      var L = colToLetter(returnColStart + i);
+      var ref = L + firstDataRow + ":" + L + lastRow;
+      ws.addConditionalFormatting({
+        ref: ref,
+        rules: [
+          { type: "cellIs", operator: "greaterThan", formulae: ["0"], style: { font: { color: { argb: "FFC23B3B" } } } },
+          { type: "cellIs", operator: "lessThan", formulae: ["0"], style: { font: { color: { argb: "FF2C5FA8" } } } }
+        ]
+      });
+    });
+
+    wb.xlsx.writeBuffer().then(function (buf) {
+      var blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "삼성생명_변액보험_펀드_수익률_" + displayDate + ".xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
   }
 
   // ---- wire up ----------------------------------------------------------
@@ -542,7 +649,7 @@
     document.getElementById("searchInput").value = "";
     render();
   });
-  document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.getElementById("exportBtn").addEventListener("click", exportXLSX);
   renderTop5();
   render();
 })();
